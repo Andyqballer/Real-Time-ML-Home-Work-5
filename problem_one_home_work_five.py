@@ -6,21 +6,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Dataset
-english_to_french = [
-    ("They listen to the radio", "Ils écoutent la radio"),
-    ("The wind blows gently", "Le vent souffle doucement"),
-    ("She swims in the ocean", "Elle nage dans l'océan"),
-    ("We dance at the wedding", "Nous dansons au mariage"),
-    ("He climbs the mountain", "Il gravit la montagne"),
-    ("They hike in the forest", "Ils font de la randonnée dans la forêt"),
-    ("The cat meows loudly", "Le chat miaule bruyamment"),
-    ("She paints a picture", "Elle peint un tableau"),
-    ("We build a sandcastle", "Nous construisons un château de sable"),
-    ("He sings in the choir", "Il chante dans le chœur")
-]
+sequence = """Next character prediction is a fundamental task in the field of natural language processing (NLP) ...
+... possibilities for the future of text-based technology."""
 
 # Tokenization
-unique_chars = sorted(list(set("".join([pair[0] for pair in english_to_french]))))
+unique_chars = sorted(list(set(sequence)))
 char_to_index = {ch: i for i, ch in enumerate(unique_chars)}
 index_to_char = {i: ch for i, ch in enumerate(unique_chars)}
 input_size = output_size = len(unique_chars)
@@ -37,7 +27,6 @@ def create_training_data(sequence, seq_length):
     return torch.tensor(sequences, dtype=torch.long), torch.tensor(next_chars, dtype=torch.long)
 
 # Preparing sequences
-sequence = "".join([pair[0] for pair in english_to_french])
 sequences_10, next_chars_10 = create_training_data(sequence, 10)
 sequences_20, next_chars_20 = create_training_data(sequence, 20)
 sequences_30, next_chars_30 = create_training_data(sequence, 30)
@@ -124,3 +113,39 @@ plt.show()
 print(f"Execution Time (Sequence Length 10): {execution_time_10:.2f} seconds")
 print(f"Execution Time (Sequence Length 20): {execution_time_20:.2f} seconds")
 print(f"Execution Time (Sequence Length 30): {execution_time_30:.2f} seconds")
+
+# Report and Comparison
+print("\nReport and Comparison:")
+print("For Transformer Model:")
+print(f"Training Loss for Sequence Length 10: {train_losses_10[-1]:.4f}")
+print(f"Training Loss for Sequence Length 20: {train_losses_20[-1]:.4f}")
+print(f"Training Loss for Sequence Length 30: {train_losses_30[-1]:.4f}")
+
+# RNN-based Approach (For comparison, let's use LSTM)
+class LSTMModel(nn.Module):
+    def __init__(self, vocab_size, embed_dim, hidden_dim, num_layers):
+        super(LSTMModel, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embed_dim)
+        self.lstm = nn.LSTM(embed_dim, hidden_dim, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, vocab_size)
+
+    def forward(self, x):
+        x = self.embedding(x)
+        x, _ = self.lstm(x)
+        x = self.fc(x[:, -1, :])
+        return x
+
+# Training LSTM
+lstm_model = LSTMModel(input_size, 128, 256, 2)
+train_losses_lstm, execution_time_lstm = train_model(lstm_model, sequences_10, next_chars_10)
+
+print("\nFor LSTM Model:")
+print(f"Training Loss for Sequence Length 10: {train_losses_lstm[-1]:.4f}")
+
+# Model size and computational complexity
+num_params_transformer = sum(p.numel() for p in transformer_model.parameters())
+num_params_lstm = sum(p.numel() for p in lstm_model.parameters())
+
+print("\nModel Sizes:")
+print(f"Transformer Model: {num_params_transformer} parameters")
+print(f"LSTM Model: {num_params_lstm} parameters")
